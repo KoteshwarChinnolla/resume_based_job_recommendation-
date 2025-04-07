@@ -6,3 +6,6 @@ langchain_groq
 langchain_community
 langchain
 pdfminer.six
+langchain_aws
+agno
+pypdf

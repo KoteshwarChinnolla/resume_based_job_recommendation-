@@ -97,11 +97,11 @@ class ResumeDecoder:
         k=self.chain2.invoke({"query": resume_details})
         return resume_details,k
 
-resume_decoder = ResumeDecoder()
-r,k = resume_decoder.response2()
+# resume_decoder = ResumeDecoder()
+# r,k = resume_decoder.response2()
 
-for i in r.keys():
-    print(i,r[i])
-    print("_"*20)
+# for i in r.keys():
+#     print(i,r[i])
+#     print("_"*20)
 
-print(k)
+# print(k)
