@@ -1,0 +1,8 @@
+dotenv
+pymongo
+fastapi
+uvicorn
+langchain_groq
+langchain_community
+langchain
+pdfminer.six
