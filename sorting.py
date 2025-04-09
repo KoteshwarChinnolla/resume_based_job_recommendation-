@@ -2,9 +2,10 @@ import heapq
 from resume_decoder import ResumeDecoder
 from pymongo import MongoClient
 
-resume_decoder = ResumeDecoder()
+
 class jobSort:
     def __init__(self):
+        resume_decoder = ResumeDecoder()
         r,k = resume_decoder.response2()
 
         r["roles"]=k["role_name"]
@@ -14,23 +15,25 @@ class jobSort:
         self.company_roles = list(collection.find())
 
         self.resume_data = r
-    def normalize(items):
+    def normalize(self,items):
         if isinstance(items, list):
             return set(i.strip().lower() for i in items)
         return items.strip().lower()
 
-    def rank_companies(resume, company_roles):
+    def rank_companies(self):
+        resume=self.resume_data
+        company_roles=self.company_roles
         print(resume)
-        resume_roles = normalize(resume["roles"])
-        resume_skills = normalize(resume["major_skills"])
+        resume_roles = self.normalize(resume["roles"])
+        resume_skills = self.normalize(resume["major_skills"])
         resume_exp = resume["experience"]
-        resume_loc = normalize(resume["city"])
+        resume_loc = self.normalize(resume["city"])
         heap = []
 
         for entry in company_roles:
             print(entry)
-            job_roles = normalize(entry["role"])
-            job_skills = normalize(entry["skills"])
+            job_roles = self.normalize(entry["role"])
+            job_skills = self.normalize(entry["skills"])
             try:
                 job_exp_from = int(entry["from_experience"])
                 job_exp_to = int(entry["to_experience"])
@@ -38,7 +41,7 @@ class jobSort:
                 job_exp_from = 0
                 job_exp_to = 0
             try:
-                job_loc = normalize(entry["city"])
+                job_loc = self.normalize(entry["city"])
             except KeyError:
                 job_loc = "hyderabad"  # Default location if not provided
 
@@ -72,13 +75,17 @@ class jobSort:
             })
         return ranked
 
-    ranked_list = rank_companies(resume_data, company_roles)
+    # ranked_list = rank_companies(resume_data, company_roles)
 
-    print("🎯 Priority-wise Suitable Companies and Roles:\n")
-    for idx, item in enumerate(ranked_list, 1):
-        print(f"{idx}. {item['company']} - {item['role']}")
-        print(f"   Skills matched: {item['matched_skills']}")
-        print(f"   Roles matched: {item['matched_roles']}")
-        print(f"   Location match: {item['location_match']}")
-        print(f"   Experience match: {item['experience_match']}")
-        print(f"   Total Score: {item['total_score']}\n")
+
+job_sort=jobSort()
+ranked_list=job_sort.rank_companies()
+
+print("🎯 Priority-wise Suitable Companies and Roles:\n")
+for idx, item in enumerate(ranked_list, 1):
+    print(f"{idx}. {item['company']} - {item['role']}")
+    print(f"   Skills matched: {item['matched_skills']}")
+    print(f"   Roles matched: {item['matched_roles']}")
+    print(f"   Location match: {item['location_match']}")
+    print(f"   Experience match: {item['experience_match']}")
+    print(f"   Total Score: {item['total_score']}\n")

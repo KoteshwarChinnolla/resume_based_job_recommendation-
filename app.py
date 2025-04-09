@@ -4,6 +4,9 @@ from pydantic import BaseModel
 from pymongo import MongoClient
 from bson import ObjectId
 import uvicorn
+from job_search import JobSearch
+
+JobSearch = JobSearch()
 
 app = FastAPI()
 
@@ -75,6 +78,23 @@ async def add_job(job: Job):
     print(job_dict)
     db.jobs.insert_one(job_dict)
     return {"message": "Job added successfully"}
+
+@app.post("/delete-job")
+async def delete_job(job_id: d_job):
+    result = db.jobs.delete_one({"_id": ObjectId(job_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {"message": "Job deleted successfully"}
+
+@app.post("/edit_job")
+async def edit_job()
+
+
+@app.post("/search_jobs")
+async def search_jobs(details:details):
+    result1,result2=JobSearch.search(user_input=details)
+    return result1,result2
+
 
 @app.post("/check-jobs")
 async def check_jobs(skill: Skill):
