@@ -9,3 +9,5 @@ pdfminer.six
 langchain_aws
 agno
 pypdf
+duckduckgo-search
+langgraph

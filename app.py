@@ -43,7 +43,6 @@ class signup(BaseModel):
     email: str
     phone: str
     password: str
-    reenter_password: str
 
 
 # Sign Up route
@@ -55,8 +54,6 @@ async def root():
 @app.post("/signup")
 async def signup(user: signup):
     user_dict = user.dict()
-    if user.password != user.reenter_password:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
     for_login={}
     for_login['email']=user_dict['email']
     for_login['password']=user_dict['password']

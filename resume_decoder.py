@@ -61,6 +61,8 @@ class ResumeDecoder:
 
         self.roles = json.dumps(Roles.schema(), indent=2)
         self.roles = json.loads(self.roles)
+        # print("Roles:")
+        # print(self.roles)
 
         # Set up a parser + inject instructions into the prompt template.
         self.parser1 = JsonOutputParser(pydantic_object=resume)
@@ -97,11 +99,11 @@ class ResumeDecoder:
         k=self.chain2.invoke({"query": resume_details})
         return resume_details,k
 
-# resume_decoder = ResumeDecoder()
-# r,k = resume_decoder.response2()
+resume_decoder = ResumeDecoder()
+r,k = resume_decoder.response2()
 
-# for i in r.keys():
-#     print(i,r[i])
-#     print("_"*20)
+for i in r.keys():
+    print(i,r[i])
+    print("_"*20)
 
-# print(k)
+print(k)
