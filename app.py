@@ -6,7 +6,7 @@ from bson import ObjectId
 import uvicorn
 from chatbot.job_search import JobSearch
 from typing import List, Optional
-from chatbot.job_q import build_graph
+# from chatbot.job_q import build_graph
 from langchain_core.prompts import ChatPromptTemplate
 import markdown
 from markdownify import markdownify as md
@@ -14,7 +14,7 @@ from convertion import JobDataTransformer
 
 converter = JobDataTransformer()
 
-graph=build_graph()
+# graph=build_graph()
 
 
 JobSearch = JobSearch()
@@ -45,15 +45,15 @@ class Job(BaseModel):
     company: str
     job_description: str
     role: str
-    from_experience: int
-    to_experience: int
+    from_experience: float
+    to_experience: float
     apply_link: str
     skills: list[str]
     city: str
     state: str
     country: str
-    from_salary: int
-    to_salary: int
+    from_salary: float
+    to_salary: float
     date: str
     job_type: str
 
@@ -163,15 +163,15 @@ async def get_jobs():
         raise HTTPException(status_code=404, detail="No jobs found")
     list_of_jobs = converter.transform_job_data(jobs)
     return list_of_jobs
-@app.post("/prompt_to_job")
-def prompt_to_job(prompt: prompt_to_job):
-    text = prompt.prompt
-    name = prompt.name
-    thread_id = prompt.thread_id
-    response=graph.response(text,name=name,thread_id=thread_id)
-    html_text = markdown.markdown(response)
-    response = md(html_text,heading_style="ATX")
-    return response
+# @app.post("/prompt_to_job")
+# def prompt_to_job(prompt: prompt_to_job):
+#     text = prompt.prompt
+#     name = prompt.name
+#     thread_id = prompt.thread_id
+#     response=graph.response(text,name=name,thread_id=thread_id)
+#     html_text = markdown.markdown(response)
+#     response = md(html_text,heading_style="ATX")
+#     return response
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=5000)
+if _name_ == "_main_":
+    uvicorn.run(app, host="127.0.0.1", port=8000)
