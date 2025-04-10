@@ -11,3 +11,5 @@ agno
 pypdf
 duckduckgo-search
 langgraph
+markdownify
+markdown

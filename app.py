@@ -8,6 +8,11 @@ from chatbot.job_search import JobSearch
 from typing import List, Optional
 from chatbot.job_q import build_graph
 from langchain_core.prompts import ChatPromptTemplate
+import markdown
+from markdownify import markdownify as md
+from convertion import JobDataTransformer
+
+converter = JobDataTransformer()
 
 graph=build_graph()
 
@@ -64,20 +69,7 @@ class signup(BaseModel):
 
 class edit_job(BaseModel):
     job_id: str
-    company: str
-    job_description: str
-    role: str
-    from_experience: int
-    to_experience: int
-    apply_link: str
-    skills: list[str]
-    city: str
-    state: str
-    country: str
-    from_salary: int
-    to_salary: int
-    date: str
-    job_type: str
+    updates: dict
 
 class d_job(BaseModel):
     job_id: str
@@ -141,11 +133,12 @@ async def delete_job(job_id: d_job):
 @app.post("/edit_job")
 async def edit_job(edit_details:edit_job):
     job_id = edit_details.job_id
-    updated_data = edit_details.dict(exclude_unset=True)
+    updated_data = edit_details.updates
     result = db.jobs.update_one({"_id": ObjectId(job_id)}, {"$set": updated_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Job not found")
     return {"message": "Job updated successfully"}
+
 
 
 @app.post("/search_jobs")
@@ -168,8 +161,7 @@ async def get_jobs():
     list_of_jobs = []
     if not jobs:
         raise HTTPException(status_code=404, detail="No jobs found")
-    for job in jobs:
-        list_of_jobs.append(JobSearch.convert(job))
+    list_of_jobs = converter.transform_job_data(jobs)
     return list_of_jobs
 @app.post("/prompt_to_job")
 def prompt_to_job(prompt: prompt_to_job):
@@ -177,7 +169,8 @@ def prompt_to_job(prompt: prompt_to_job):
     name = prompt.name
     thread_id = prompt.thread_id
     response=graph.response(text,name=name,thread_id=thread_id)
-    
+    html_text = markdown.markdown(response)
+    response = md(html_text,heading_style="ATX")
     return response
 
 if __name__ == "__main__":
