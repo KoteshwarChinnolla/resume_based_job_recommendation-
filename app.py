@@ -6,15 +6,17 @@ from bson import ObjectId
 import uvicorn
 from chatbot.job_search import JobSearch
 from typing import List, Optional
-# from chatbot.job_q import build_graph
+from chatbot.job_q import build_graph
 from langchain_core.prompts import ChatPromptTemplate
 import markdown
 from markdownify import markdownify as md
 from convertion import JobDataTransformer
+from sorting import jobSort
+# ranked_list=job_sort.rank_companies()
 
 converter = JobDataTransformer()
 
-# graph=build_graph()
+graph=build_graph()
 
 
 JobSearch = JobSearch()
@@ -35,6 +37,9 @@ db = client['Growup']
 
 class Skill(BaseModel):
     name: str
+
+class file_path(BaseModel):
+    file_path: str
 
 class prompt_to_job(BaseModel):
     prompt: str
@@ -140,6 +145,11 @@ async def edit_job(edit_details:edit_job):
     return {"message": "Job updated successfully"}
 
 
+@app.post("/rank_jobs")
+async def rank_jobs(file_path:file_path):
+    job_sort=jobSort(file_path.file_path)
+    ranked_list = job_sort.rank_companies()
+    return ranked_list
 
 @app.post("/search_jobs")
 async def search_jobs(details:details):
@@ -163,15 +173,17 @@ async def get_jobs():
         raise HTTPException(status_code=404, detail="No jobs found")
     list_of_jobs = converter.transform_job_data(jobs)
     return list_of_jobs
-# @app.post("/prompt_to_job")
-# def prompt_to_job(prompt: prompt_to_job):
-#     text = prompt.prompt
-#     name = prompt.name
-#     thread_id = prompt.thread_id
-#     response=graph.response(text,name=name,thread_id=thread_id)
-#     html_text = markdown.markdown(response)
-#     response = md(html_text,heading_style="ATX")
-#     return response
 
-if _name_ == "_main_":
+
+@app.post("/prompt_to_job")
+def prompt_to_job(prompt: prompt_to_job):
+    text = prompt.prompt
+    name = prompt.name
+    thread_id = prompt.thread_id
+    response=graph.response(text,name=name,thread_id=thread_id)
+    html_text = markdown.markdown(response)
+    response = md(html_text,heading_style="ATX")
+    return response
+
+if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)

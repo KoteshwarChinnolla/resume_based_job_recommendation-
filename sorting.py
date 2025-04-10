@@ -1,11 +1,12 @@
 import heapq
 from resume_decoder import ResumeDecoder
 from pymongo import MongoClient
+import itertools
 
 
 class jobSort:
-    def __init__(self):
-        resume_decoder = ResumeDecoder()
+    def __init__(self,file_path):
+        resume_decoder = ResumeDecoder(file_path)
         r,k = resume_decoder.response2()
 
         r["roles"]=k["role_name"]
@@ -29,6 +30,7 @@ class jobSort:
         resume_exp = resume["experience"]
         resume_loc = self.normalize(resume["city"])
         heap = []
+        counter = itertools.count()
 
         for entry in company_roles:
             print(entry)
@@ -57,7 +59,8 @@ class jobSort:
                 score += 1
 
             if score > 0:
-                heapq.heappush(heap, (-score, entry["company"], entry["role"], {
+                print(f"Score: {score}, Company: {entry['company']}, Role: {entry['role']}")
+                heapq.heappush(heap, (-score, entry["company"], entry["role"], next(counter), {
                     "matched_skills": list(matched_skills),
                     "matched_roles": list(matched_roles),
                     "location_match": location_match,
@@ -66,26 +69,32 @@ class jobSort:
                 }))
 
         ranked = []
-        while heap:
-            score, company, role, details = heapq.heappop(heap)
+        i=6
+        while (i>0) and heap:
+            details_ = heapq.heappop(heap)
+            # (-3, 'Nxtwave', 'Datascientist', 6, {'matched_skills': ['machine learning'], 'matched_roles': [], 'location_match': True, 'experience_match': True, 'total_score': 3}) 
+            details = details_[4]
+            company = details_[1]
+            role = details_[2]
             ranked.append({
                 "company": company,
                 "role": role,
                 **details
             })
+            i-=1
         return ranked
 
     # ranked_list = rank_companies(resume_data, company_roles)
 
 
-job_sort=jobSort()
-ranked_list=job_sort.rank_companies()
+# job_sort=jobSort()
+# ranked_list=job_sort.rank_companies()
 
-print("🎯 Priority-wise Suitable Companies and Roles:\n")
-for idx, item in enumerate(ranked_list, 1):
-    print(f"{idx}. {item['company']} - {item['role']}")
-    print(f"   Skills matched: {item['matched_skills']}")
-    print(f"   Roles matched: {item['matched_roles']}")
-    print(f"   Location match: {item['location_match']}")
-    print(f"   Experience match: {item['experience_match']}")
-    print(f"   Total Score: {item['total_score']}\n")
+# print("🎯 Priority-wise Suitable Companies and Roles:\n")
+# for idx, item in enumerate(ranked_list, 1):
+#     print(f"{idx}. {item['company']} - {item['role']}")
+#     print(f"   Skills matched: {item['matched_skills']}")
+#     print(f"   Roles matched: {item['matched_roles']}")
+#     print(f"   Location match: {item['location_match']}")
+#     print(f"   Experience match: {item['experience_match']}")
+#     print(f"   Total Score: {item['total_score']}\n")

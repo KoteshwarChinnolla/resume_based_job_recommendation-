@@ -47,9 +47,10 @@ root.withdraw()
 
 # Open file picker dialog
 class ResumeDecoder:
-    def __init__(self):
+    def __init__(self, file_path):
         
-        self.file_path = filedialog.askopenfilename(title="Select a PDF", filetypes=[("PDF files", "*.pdf")])
+        self.file_path = file_path
+        # self.file_path = filedialog.askopenfilename(title="Select a PDF file", filetypes=[("PDF files", "*.pdf")])
         self.text = extract_text(self.file_path)
         self.model = ChatGroq(
             model="Qwen-2.5-32B",
