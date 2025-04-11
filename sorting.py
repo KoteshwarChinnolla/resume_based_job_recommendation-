@@ -5,9 +5,9 @@ import itertools
 
 
 class jobSort:
-    def __init__(self,file_path):
-        resume_decoder = ResumeDecoder(file_path)
-        r,k = resume_decoder.response2()
+    def __init__(self,pdf_text):
+        resume_decoder = ResumeDecoder(pdf_text)
+        r,k = resume_decoder.response()
 
         r["roles"]=k["role_name"]
         client = MongoClient("mongodb+srv://Mithunlogin:12345@cluster0.nfdmggi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
@@ -36,16 +36,9 @@ class jobSort:
             print(entry)
             job_roles = self.normalize(entry["role"])
             job_skills = self.normalize(entry["skills"])
-            try:
-                job_exp_from = int(entry["from_experience"])
-                job_exp_to = int(entry["to_experience"])
-            except ValueError:
-                job_exp_from = 0
-                job_exp_to = 0
-            try:
-                job_loc = self.normalize(entry["city"])
-            except KeyError:
-                job_loc = "hyderabad"  # Default location if not provided
+            job_exp_from = int(entry["from_experience"])
+            job_exp_to = int(entry["to_experience"])
+            job_loc = self.normalize(entry["city"])
 
             matched_skills = resume_skills & job_skills
             matched_roles = resume_roles & set(job_roles)
@@ -62,7 +55,6 @@ class jobSort:
                 print(f"Score: {score}, Company: {entry['company']}, Role: {entry['role']}")
                 heapq.heappush(heap, (-score, entry["company"], entry["role"], next(counter), {
                     "matched_skills": list(matched_skills),
-                    "matched_roles": list(matched_roles),
                     "location_match": location_match,
                     "experience_match": experience_match,
                     "total_score": score

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException,File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pymongo import MongoClient
@@ -12,6 +12,9 @@ import markdown
 from markdownify import markdownify as md
 from convertion import JobDataTransformer
 from sorting import jobSort
+import os
+from pdfminer.high_level import extract_text
+from dotenv import load_dotenv
 # ranked_list=job_sort.rank_companies()
 
 converter = JobDataTransformer()
@@ -102,6 +105,17 @@ class details(BaseModel):
 async def root():
     return {"message": "Welcome to the FastAPI backend!"}
 
+@app.get("/all_jobs")
+async def all_jobs():
+    jobs_cursor = db.jobs.find()
+    jobs = []
+
+    for job in jobs_cursor:
+        job["_id"] = str(job["_id"])  # Convert ObjectId to string
+        jobs.append(job)
+
+    return {"jobs": jobs}
+
 
 @app.post("/signup")
 async def signup(user: signup):
@@ -118,7 +132,7 @@ async def signup(user: signup):
 async def login(user: login):
     existing_user = db.users.find_one({"email": user.email, "password": user.password})
     if existing_user:
-        return {"message": "Login successful"}
+        return {"message": "Login successful", "user": user.email}
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
 @app.post("/add-job")
@@ -145,11 +159,11 @@ async def edit_job(edit_details:edit_job):
     return {"message": "Job updated successfully"}
 
 
-@app.post("/rank_jobs")
-async def rank_jobs(file_path:file_path):
-    job_sort=jobSort(file_path.file_path)
-    ranked_list = job_sort.rank_companies()
-    return ranked_list
+# @app.post("/rank_jobs")
+# async def rank_jobs(file_path:file_path):
+#     job_sort=jobSort(file_path.file_path)
+#     ranked_list = job_sort.rank_companies()
+#     return ranked_list
 
 @app.post("/search_jobs")
 async def search_jobs(details:details):
@@ -182,8 +196,54 @@ def prompt_to_job(prompt: prompt_to_job):
     thread_id = prompt.thread_id
     response=graph.response(text,name=name,thread_id=thread_id)
     html_text = markdown.markdown(response)
-    response = md(html_text,heading_style="ATX")
-    return response
+    # response = md(html_text,heading_style="ATX")
+    return html_text
+
+@app.post("/resume_upload")
+async def resume_upload(file: UploadFile = File(...),Email:str=""):
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files allowed")
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_{file.filename}"
+    with open(temp_file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+
+    # Extract text using pdfminer
+    try:
+        extracted_text = extract_text(temp_file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}")
+    finally:
+        os.remove(temp_file_path)  # clean up
+
+    
+
+    # Save to MongoDB
+    resume_doc = {
+        "user": Email,
+        "filename": file.filename,
+        "content": extracted_text
+    }
+    if db.resumes.find_one({"user": Email}):
+        db.resumes.delete_one({"user": Email})
+    result = db.resumes.insert_one(resume_doc)
+
+    return {
+        "message": "Resume parsed and stored successfully",
+        "resume_id": str(result.inserted_id),
+        "filename": file.filename
+    }
+
+@app.get("/get-text")
+async def get_text(Email:str):
+    print(Email)
+
+    x=db.resumes.find_one({"user":Email.replace("%40","@")})
+    job_sort=jobSort(x["content"])
+    ranked_list = job_sort.rank_companies()
+    return ranked_list
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
