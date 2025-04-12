@@ -188,6 +188,7 @@ async def get_jobs():
     list_of_jobs = converter.transform_job_data(jobs)
     return list_of_jobs
 
+<<<<<<< HEAD
 
 @app.post("/prompt_to_job")
 def prompt_to_job(prompt: prompt_to_job):
@@ -247,3 +248,68 @@ async def get_text(Email:str):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
+=======
+
+@app.post("/prompt_to_job")
+def prompt_to_job(prompt: prompt_to_job):
+    text = prompt.prompt
+    name = prompt.name
+    thread_id = prompt.thread_id
+    response=graph.response(text,name=name,thread_id=thread_id)
+    html_text = markdown.markdown(response)
+    # response = md(html_text,heading_style="ATX")
+    return html_text
+
+@app.post("/resume_upload")
+async def resume_upload(file: UploadFile = File(...),Email:str=""):
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files allowed")
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_{file.filename}"
+    with open(temp_file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+
+    # Extract text using pdfminer
+    try:
+        extracted_text = extract_text(temp_file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}")
+    finally:
+        os.remove(temp_file_path)  # clean up
+
+    
+
+    # Save to MongoDB
+    resume_doc = {
+        "user": Email,
+        "filename": file.filename,
+        "content": extracted_text
+    }
+    if db.resumes.find_one({"user": Email}):
+        db.resumes.delete_one({"user": Email})
+    result = db.resumes.insert_one(resume_doc)
+    x=db.resumes.find_one({"user":Email.replace("%40","@")})
+    job_sort=jobSort(x["content"])
+    ranked_list = job_sort.rank_companies()
+    return ranked_list
+
+    # return {
+    #     "message": "Resume parsed and stored successfully",
+    #     "resume_id": str(result.inserted_id),
+    #     "filename": file.filename
+    # }
+
+@app.get("/get-text")
+async def get_text(Email:str):
+    print(Email)
+
+    x=db.resumes.find_one({"user":Email.replace("%40","@")})
+    job_sort=jobSort(x["content"])
+    ranked_list = job_sort.rank_companies()
+    return ranked_list
+
+if _name_ == "_main_":
+    uvicorn.run(app, host="127.0.0.1", port=3000)
+>>>>>>> bbcfad6 (pushed my complete project from D drive)

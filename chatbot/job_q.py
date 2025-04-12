@@ -1,3 +1,4 @@
+
 import os
 from dotenv import load_dotenv
 from typing_extensions import TypedDict
@@ -47,9 +48,11 @@ class build_graph:
         self.job_search=t.job_search
         self.internship_search=t.internship_search
         self.websearch=t.websearch
+        self.about_us=t.about_us
+        self.services=t.services
         self.memory=MemorySaver()
 
-        self.tools_list=[self.job_search,self.internship_search,self.websearch]
+        self.tools_list=[self.job_search,self.internship_search,self.websearch,self.about_us,self.services]
 
         self.llm_with_tool=self.model.bind_tools(self.tools_list)
 
@@ -76,13 +79,12 @@ class build_graph:
         print("tool calling llm")
 
         sys_msg = '''
-        you are a carrier guide assistant. your task is to respond with the opertunities, paths, guidance, and resources available to the given user_input.
-        you can use the tools to search for jobs and internships. you can also search the web for any information.
+        you are a carrier guide assistant for "Growup" organization. your task is to respond with the opportunities, paths, guidance, and resources available to the given user_input.
+        you can use the tools to search for jobs, internships and services we provide .you can also use tools like aboutUS to know about GrowUp and webSearch for any other information.
         to search for jobs and internships the json inputs must be in a specific format.
         format to search for jobs / internships: {jobs}
-
-        job search / internship search tool produces 2 outputs 1st represents matching jobs (jobs with any one or more parameter matched) and 2nd represents perfect match jobs (jobs with all the given parameters matched). explain user according to that.
-
+        job search / internship search tool produces 2 outputs 1st represents matching jobs (jobs with any one or more parameter matched) and 2nd represents perfect match jobs (jobs with all the given parameters matched).
+        query the aboutus and services tool by yourself, if your response also needs to have any information about the organization or services we provide.
         use tool outputs to answer the user_input. provide guidance. dont make any tool calling errors.
         '''
 

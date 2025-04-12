@@ -11,5 +11,11 @@ agno
 pypdf
 duckduckgo-search
 langgraph
+<<<<<<< HEAD
 markdownify
 markdown
+=======
+tranformers
+torch
+python-dotenv
+>>>>>>> bbcfad6 (pushed my complete project from D drive)

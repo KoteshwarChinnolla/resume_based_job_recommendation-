@@ -3,9 +3,9 @@ from chatbot.job_search import JobSearch
 
 JobSearch = JobSearch()
 search = DuckDuckGoSearchRun()
-
-
-
+from chatbot.vector_searchabout import VectorSearch
+from chatbot.vector_searchservices import VectorSearch
+searcher = VectorSearch()
 class tools:
     def job_search(self,details:dict)->dict:
         """ search for jobs based on the details provided
@@ -37,3 +37,30 @@ class tools:
         """
         websearch=search.invoke(search_info)
         return websearch
+    
+    def about_us(self, query) -> str:
+        """Search the vector database for information related to the organization's 'About Us' section.
+
+        Args:
+            query: A user-provided question or input specifically about the organization (e.g., mission, vision, background).
+
+        Returns:
+            A string containing the relevant text extracted from the vector search results.
+        """
+        results = searcher.search_documents(query)
+        context = "\n\n".join([res["text"] for res in results])
+        return context
+
+    def services(self, query) -> str:
+        """
+        Search the vector database for service-related information based on the query.
+
+        Args:
+            query: The user's question or input about services.
+
+        Returns:
+            A string containing the retrieved and joined text content related to services.
+        """
+        results = searcher.search_documents(query)
+        context = "\n\n".join([res["text"] for res in results])
+        return context
