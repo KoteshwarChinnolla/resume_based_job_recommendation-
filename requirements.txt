@@ -13,3 +13,5 @@ duckduckgo-search
 langgraph
 markdownify
 markdown
+transformers
+torch

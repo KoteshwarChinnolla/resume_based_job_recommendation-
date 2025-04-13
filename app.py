@@ -51,7 +51,6 @@ class prompt_to_job(BaseModel):
 
 class Job(BaseModel):
     company: str
-    job_description: str
     role: str
     from_experience: float
     to_experience: float
@@ -64,6 +63,7 @@ class Job(BaseModel):
     to_salary: float
     date: str
     job_type: str
+    tech_nontech: str
 
 class login(BaseModel):
     email: str
@@ -77,7 +77,7 @@ class signup(BaseModel):
 
 class edit_job(BaseModel):
     job_id: str
-    updates: dict
+    updates: dict ={}
 
 class d_job(BaseModel):
     job_id: str
@@ -97,6 +97,7 @@ class details(BaseModel):
     to_salary: Optional[int] = None
     date: Optional[str] = None
     job_type: Optional[str] = None
+    tech_nontech: Optional[str] = None
  
 
 
@@ -109,10 +110,11 @@ async def root():
 async def all_jobs():
     jobs_cursor = db.jobs.find()
     jobs = []
-
+    print(list(jobs_cursor))
     for job in jobs_cursor:
         job["_id"] = str(job["_id"])  # Convert ObjectId to string
         jobs.append(job)
+        print(job)
 
     return {"jobs": jobs}
 
@@ -142,6 +144,9 @@ async def add_job(job: Job):
     db.jobs.insert_one(job_dict)
     return {"message": "Job added successfully"}
 
+# @app.post("/find-edit-job")
+# async def find_edit_job()
+
 @app.post("/delete-job")
 async def delete_job(job_id: d_job):
     result = db.jobs.delete_one({"_id": ObjectId(job_id.job_id)})
@@ -157,13 +162,6 @@ async def edit_job(edit_details:edit_job):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Job not found")
     return {"message": "Job updated successfully"}
-
-
-# @app.post("/rank_jobs")
-# async def rank_jobs(file_path:file_path):
-#     job_sort=jobSort(file_path.file_path)
-#     ranked_list = job_sort.rank_companies()
-#     return ranked_list
 
 @app.post("/search_jobs")
 async def search_jobs(details:details):
@@ -209,7 +207,6 @@ async def resume_upload(file: UploadFile = File(...),Email:str=""):
     with open(temp_file_path, "wb") as f:
         content = await file.read()
         f.write(content)
-
     # Extract text using pdfminer
     try:
         extracted_text = extract_text(temp_file_path)
@@ -217,8 +214,6 @@ async def resume_upload(file: UploadFile = File(...),Email:str=""):
         raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}")
     finally:
         os.remove(temp_file_path)  # clean up
-
-    
 
     # Save to MongoDB
     resume_doc = {
@@ -230,16 +225,12 @@ async def resume_upload(file: UploadFile = File(...),Email:str=""):
         db.resumes.delete_one({"user": Email})
     result = db.resumes.insert_one(resume_doc)
 
-    return {
-        "message": "Resume parsed and stored successfully",
-        "resume_id": str(result.inserted_id),
-        "filename": file.filename
-    }
+    job_sort=jobSort(extracted_text)
+    ranked_list = job_sort.rank_companies()
+    return ranked_list
 
 @app.get("/get-text")
 async def get_text(Email:str):
-    print(Email)
-
     x=db.resumes.find_one({"user":Email.replace("%40","@")})
     job_sort=jobSort(x["content"])
     ranked_list = job_sort.rank_companies()

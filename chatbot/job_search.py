@@ -11,6 +11,8 @@ class JobSearch:
     def normalize(self,items):
         if isinstance(items, int):
             return items
+        if isinstance(items, float):
+            return items
         if isinstance(items, list):
             return set(i.strip().lower() for i in items)
         return items.strip().lower()
@@ -101,27 +103,41 @@ class JobSearch:
                     not_matched = True
 
             if matched:
-                self.results1.append(self.convert(job))
+                job_result = {
+                    "company": job.get("company"),
+                    "role": job.get("role"),
+                    "job_description": job.get("job_description"),
+                    "experience_range": f"{job.get('from_experience')} - {job.get('to_experience')} years",
+                    "salary_range": f"{job.get('from_salary')} - {job.get('to_salary')}",
+                    "city": f"{job.get('city')}",
+                    "state": f"{job.get('state')}", 
+                    "country":f"{job.get('country')}",
+                    "job_type": job.get("job_type"),
+                    "tech_nontech": job.get("tech_nontech"),
+                    "apply_link": job.get("apply_link"),
+                    "date": job.get("date"),
+                    "matched_skills": list(common_skills)
+                }
+                self.results1.append(job_result)
             if not_matched is False:
-                self.results2.append(self.convert(job))
+                job_perfect_match = {
+                    "company": job.get("company"),
+                    "role": job.get("role"),
+                    "job_description": job.get("job_description"),
+                    "experience_range": f"{job.get('from_experience')} - {job.get('to_experience')} years",
+                    "salary_range": f"{job.get('from_salary')} - {job.get('to_salary')}",  
+                    "city": f"{job.get('city')}",
+                    "state": f"{job.get('state')}", 
+                    "country":f"{job.get('country')}",
+                    "job_type": job.get("job_type"),
+                    "tech_nontech": job.get("tech_nontech"),
+                    "apply_link": job.get("apply_link"),
+                    "date": job.get("date"),
+                    "matched_skills": list(common_skills)
+                }
+                self.results2.append(job_perfect_match)
+
         return self.results1, self.results2
-    def convert(self,job):
-        job_result = {
-            "_id": str(job["_id"]),
-            "company": job.get("company"),
-            "role": job.get("role"),
-            "job_description": job.get("job_description"),
-            "experience_range": f"{job.get('from_experience')} - {job.get('to_experience')} years",
-            "salary_range": f"{job.get('from_salary')} - {job.get('to_salary')}",
-            "city": f"{job.get('city')}",
-            "state": f"{job.get('state')}", 
-            "country":f"{job.get('country')}",
-            "job_type": job.get("job_type"),
-            "tech_nontech": job.get("tech_nontech"),
-            "apply_link": job.get("apply_link"),
-            "date": job.get("date"),
-        }
-        return job_result
 
 # user_input = {'company': 'Capgemini', 'city': 'Bangalore '}
 # job_search = JobSearch()

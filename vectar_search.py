@@ -40,13 +40,13 @@ retriever = vector_store.as_retriever()
 knowledge_base = LangChainKnowledgeBase(retriever=retriever)
 
 agent = Agent(
- model=Groq(id="llama-3.3-70b-versatile"),
- knowledge=knowledge_base,
- description="Answer to the user question from the knowledge base",
-tools=[DuckDuckGoTools()],      # Add DuckDuckGo tool to search the web
-show_tool_calls=True,  
-markdown=True,
-search_knowledge=True,
+    model=Groq(id="llama-3.3-70b-versatile"),
+    knowledge=knowledge_base,
+    description="Answer to the user question from the knowledge base",
+    tools=[DuckDuckGoTools()],      # Add DuckDuckGo tool to search the web
+    show_tool_calls=True,  
+    markdown=True,
+    search_knowledge=True,
 )
 
 agent.print_response("Tell me about a breaking news story from New York.", stream=True)

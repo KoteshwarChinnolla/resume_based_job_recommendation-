@@ -1,8 +1,9 @@
+
 import os
 from dotenv import load_dotenv
 from typing_extensions import TypedDict
 from langchain_core.messages import AnyMessage
-from typing import Annotated
+from typing import Annotated, Literal
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
@@ -16,10 +17,14 @@ from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 import json
 from chatbot.job_search import JobSearch
+from roles import Roles
 
 
 load_dotenv()
 os.environ["GROQ_API_KEY"]= os.getenv("GROQ_API_KEY")
+
+roles = json.dumps(Roles.schema(), indent=2)
+roles = json.loads(roles)
 
 class MessageState(TypedDict):
     messages:Annotated[list[AnyMessage],add_messages]
@@ -27,7 +32,18 @@ class MessageState(TypedDict):
 class Job(BaseModel):
     company: str
     job_description: str
-    role: list[str] 
+    role: Literal[
+        "MarketingTechnologist", "SEOSpecialist", "WebAnalyticsDeveloper", "DigitalMarketingManager", "SocialMediaManager",
+        "GrowthHacker", "Content_Manager", "Content_Strategist", "InformationArchitect", "UX_Designer", "UI_Designer",
+        "AccessibilitySpecialist", "InteractionDesigner", "FrontEndDesigner", "FrontEndDeveloper", "MobileDeveloper",
+        "FullStackDeveloper", "SoftwareDeveloper", "WordPressDeveloper", "FrameworksSpecialist", "ReactDeveloper",
+        "PythonDeveloper", "ThreeDDesigner", "ARVRDeveloper", "GameDeveloper", "AugmentedRealityDesigner",
+        "VirtualRealityDesigner", "BusinessSystemsAnalyst", "SystemsEngineer", "SystemsAdministrator", "AIDeveloper",
+        "AlgorithmEngineer", "MachineLearningEngineer", "DatabaseAdministrator", "DataArchitect", "DataModeler",
+        "DataAnalyst", "DataScientist", "CloudArchitect", "TechnicalLead", "DevOpsManager", "AgileProjectManager",
+        "ProductManager", "TechnicalAccountManager", "SecuritySpecialist", "QASpecialist", "ComputerGraphicsAnimator",
+        "MobileAppDeveloper", "MobileAppDesigner"
+    ]
     experience: int
     apply_link: str
     skills: list[str] 
@@ -37,7 +53,7 @@ class Job(BaseModel):
     expected_salary: int
     date: str
     job_type: str
-    tech_nontech: str
+    tech_nontech : Literal["tech", "non-tech"]
 
 class build_graph:
     def __init__(self):
@@ -47,9 +63,11 @@ class build_graph:
         self.job_search=t.job_search
         self.internship_search=t.internship_search
         self.websearch=t.websearch
+        self.about=t.about_us
+        self.services=t.services
         self.memory=MemorySaver()
 
-        self.tools_list=[self.job_search,self.internship_search,self.websearch]
+        self.tools_list=[self.job_search,self.internship_search,self.websearch,self.about,self.services]
 
         self.llm_with_tool=self.model.bind_tools(self.tools_list)
 
@@ -73,17 +91,23 @@ class build_graph:
         return self.graph
 
     def tool_calling_llm(self,state=MessageState):
-        print("tool calling llm")
 
         sys_msg = '''
-        you are a carrier guide assistant. your task is to respond with the opertunities, paths, guidance, and resources available to the given user_input.
-        you can use the tools to search for jobs and internships. you can also search the web for any information.
+        you are a chatbot for GrowUp organization. your task is to respond with the opertunities, paths, guidance, and resources available to the given user_input.
+        you can use the tools to search for jobs, internships and services. you can also use about tool if response require companies information and can use web search tool for any current web information.
         to search for jobs and internships the json inputs must be in a specific format.
-        format to search for jobs / internships: {jobs}
 
-        job search / internship search tool produces 2 outputs 1st represents matching jobs (jobs with any one or more parameter matched) and 2nd represents perfect match jobs (jobs with all the given parameters matched). explain user according to that.
+        1. Format to search for jobs / internships: {jobs}
+        job search / internship search tool produces 2 outputs 1st represents matching jobs (jobs with any one or more parameter matched) and 2nd represents perfect match jobs (jobs with all the given parameters matched).
+        
+        2. input the about us tool with the related query, if the response require companies information like (Mission,Benefits,Vision,Commitment,Achievements)
 
-        use tool outputs to answer the user_input. provide guidance. dont make any tool calling errors.
+        3. input the about us tool with the related query, the response require companies services like.
+
+        4. ask websearch tool for any current information
+
+        process required toll responses summarize for a perfect output. make relevant tool calls for faster response. provide to the point response dont make any tool calling errors.
+        
         '''
 
         template = ChatPromptTemplate([
