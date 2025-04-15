@@ -1,9 +1,8 @@
-
 import os
 from dotenv import load_dotenv
 from typing_extensions import TypedDict
 from langchain_core.messages import AnyMessage
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Dict, Any, List, Optional
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
@@ -21,7 +20,11 @@ from roles import Roles
 
 
 load_dotenv()
-os.environ["GROQ_API_KEY"]= os.getenv("GROQ_API_KEY")
+# Set a default API key if not provided in environment
+if os.getenv("GROQ_API_KEY") is None:
+    os.environ["GROQ_API_KEY"] = "default_key_for_development"
+else:
+    os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
 roles = json.dumps(Roles.schema(), indent=2)
 roles = json.loads(roles)
@@ -32,7 +35,7 @@ class MessageState(TypedDict):
 class Job(BaseModel):
     company: str
     job_description: str
-    role: list[Annotated[str, Literal[
+    role: Literal[
         "MarketingTechnologist", "SEOSpecialist", "WebAnalyticsDeveloper", "DigitalMarketingManager", "SocialMediaManager",
         "GrowthHacker", "Content_Manager", "Content_Strategist", "InformationArchitect", "UX_Designer", "UI_Designer",
         "AccessibilitySpecialist", "InteractionDesigner", "FrontEndDesigner", "FrontEndDeveloper", "MobileDeveloper",
@@ -43,7 +46,7 @@ class Job(BaseModel):
         "DataAnalyst", "DataScientist", "CloudArchitect", "TechnicalLead", "DevOpsManager", "AgileProjectManager",
         "ProductManager", "TechnicalAccountManager", "SecuritySpecialist", "QASpecialist", "ComputerGraphicsAnimator",
         "MobileAppDeveloper", "MobileAppDesigner"
-    ]]]
+    ]
     experience: int
     apply_link: str
     skills: list[str] 
@@ -56,7 +59,7 @@ class Job(BaseModel):
     tech_nontech : Literal["tech", "non-tech"]
 
 class build_graph:
-    def __init__(self):
+    def _init_(self):
 
         t=tools()
         self.model=ChatGroq(model="qwen-2.5-32b")
@@ -106,12 +109,8 @@ class build_graph:
 
         4. ask websearch tool for any current information
 
-        dont repeat the same tool call multiple times, call the tool only once with all the required inputs and use the response to generate the final answer.
-        if the tool is not required then just respond with the answer.
-
-        restrict the output below 500 words.
-
-        use required tools perfectly and dont make any tool calling errors.
+        process required toll responses summarize for a perfect output. make relevant tool calls for faster response. provide to the point response dont make any tool calling errors.
+        
         '''
 
         template = ChatPromptTemplate([
@@ -147,6 +146,7 @@ class build_graph:
             "job_type": job_data.get("job_type", "Full-time"),
             "category": job_data.get("tech_nontech", "string"),
             "description": job_data.get("job_description", "not mentioned"),
+            "match_score": 1  # Default match score
         }
 
     def response(self,message,name,thread_id):
@@ -242,7 +242,7 @@ class build_graph:
                 # Format the response according to the exact format required with only perfect matches
                 response_data["tools"]["job_search"] = {
                     "total_results": len(job_search_results["perfect_match_jobs"]),
-                    "jobs": job_search_results,
+                    "jobs": job_search_results["perfect_match_jobs"],
                     "search_criteria": search_criteria
                 }
             
@@ -268,7 +268,3 @@ class build_graph:
         
         # Otherwise return the full response
         return json.loads(json.dumps(response_data, indent=2))
-
-# graph=build_graph()
-# response=graph.response(input(),name="user",thread_id="1234")
-# print(response)

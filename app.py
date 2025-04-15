@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException,File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel,EmailStr
 from pymongo import MongoClient
 from bson import ObjectId
 import uvicorn
@@ -15,7 +15,25 @@ from sorting import jobSort
 import os
 from pdfminer.high_level import extract_text
 from dotenv import load_dotenv
+import pandas as pd
+from passlib.hash import bcrypt
+import smtplib
+from email.mime.text import MIMEText
+import uuid
 # ranked_list=job_sort.rank_companies()
+
+# forgat password
+reset_tokens = {}
+
+GMAIL_EMAIL = "growupitservices@gmail.com"  # Replace with your Gmail
+GMAIL_PASSWORD = "ffku zaha tyve dmhm"
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 converter = JobDataTransformer()
 
@@ -110,11 +128,10 @@ async def root():
 async def all_jobs():
     jobs_cursor = db.jobs.find()
     jobs = []
-    print(list(jobs_cursor))
     for job in jobs_cursor:
         job["_id"] = str(job["_id"])  # Convert ObjectId to string
         jobs.append(job)
-        print(job)
+        # print(job)
 
     return {"jobs": jobs}
 
@@ -193,9 +210,9 @@ def prompt_to_job(prompt: prompt_to_job):
     name = prompt.name
     thread_id = prompt.thread_id
     response=graph.response(text,name=name,thread_id=thread_id)
-    html_text = markdown.markdown(response)
+    # html_text = markdown.markdown(response)
     # response = md(html_text,heading_style="ATX")
-    return html_text
+    return response
 
 @app.post("/resume_upload")
 async def resume_upload(file: UploadFile = File(...),Email:str=""):
@@ -235,6 +252,51 @@ async def get_text(Email:str):
     job_sort=jobSort(x["content"])
     ranked_list = job_sort.rank_companies()
     return ranked_list
+
+def send_reset_email(email: str, token: str):
+    reset_link = f"http://localhost:5173/reset-password?token={token}"
+    subject = "Password Reset Request"
+    body = f"<p>Click the link below to reset your password:</p><a href='{reset_link}'>{reset_link}</a>"
+
+    msg = MIMEText(body, "html")
+    msg["Subject"] = subject
+    msg["From"] = GMAIL_EMAIL
+    msg["To"] = email
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(GMAIL_EMAIL, GMAIL_PASSWORD)
+            server.sendmail(GMAIL_EMAIL, email, msg.as_string())
+    except Exception as e:
+        print("Error sending email:", str(e))
+        raise HTTPException(status_code=500, detail="Failed to send reset email")
+
+# forgat password
+@app.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    user = db.users.find_one({"email": request.email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    token = str(uuid.uuid4())
+    reset_tokens[token] = request.email
+    send_reset_email(request.email, token)
+    return {"message": "Password reset link sent to your email."}
+
+
+@app.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest):
+    email = reset_tokens.get(request.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    hashed_pw = request.new_password
+    db.users.update_one({"email": email}, {"$set": {"password": hashed_pw}})
+    db.login_info.update_one({"email": email}, {"$set": {"password": hashed_pw}})
+    del reset_tokens[request.token]
+    return {"message": "Password updated successfully."}
+
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -63,7 +63,9 @@ class ResumeDecoder:
         self.resume_text = pdf_text
         # self.file_path = filedialog.askopenfilename(title="Select a PDF file", filetypes=[("PDF files", "*.pdf")])
         
-        self.model = ChatGroq(model="Qwen-2.5-32B")
+        self.model = ChatGroq(model="llama-3.3-70b-versatile")
+        # self.model = ChatGroq(model="whisper-large-v3")
+
 
         self.roles = json.dumps(Roles.schema(), indent=2)
         self.roles = json.loads(self.roles)
@@ -78,7 +80,7 @@ class ResumeDecoder:
         )
 
         self.prompt2 = PromptTemplate(
-            template="you are given with the resume details. list out the roles from the \n {roles} \n if role values match with the skills in resume details. output in this format  \n{format_instructions}\n resume:{query}\n",
+            template="you are given with the resume details. list out the roles from the \n {roles} \n if role values match with the skills in resume details.just output in this format  \n{format_instructions} as it is json just output json. \n resume:{query}\n",
             input_variables=["query"],
             partial_variables={"format_instructions": self.parser2.get_format_instructions(),"roles":self.roles},
         )

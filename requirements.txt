@@ -15,3 +15,6 @@ markdownify
 markdown
 transformers
 torch
+passlib[bcrypt]
+email-validator
+pandas

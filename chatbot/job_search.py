@@ -83,9 +83,9 @@ class JobSearch:
                     not_matched = True
 
             if "role" in user_input:
-                job_roles = set(job.get("role"))
-                user_role = set(user_input["role"])
-                if user_role & job_roles:
+                job_roles = job.get("role")
+                user_role = user_input["role"]
+                if job_roles in user_role:
                     matched = True
                 else:
                     not_matched = True
@@ -137,7 +137,7 @@ class JobSearch:
                 }
                 self.results2.append(job_perfect_match)
 
-        return self.results1, self.results2
+        return self.results1[:3], self.results2[:3]
 
 # user_input = {'company': 'Capgemini', 'city': 'Bangalore '}
 # job_search = JobSearch()

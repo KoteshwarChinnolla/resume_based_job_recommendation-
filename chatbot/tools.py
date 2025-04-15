@@ -17,7 +17,7 @@ class tools:
         print(details)
         try : 
             result1,result2=JobSearch.search(user_input=details)
-            print(result1,result2)
+            # print(result1,result2)
         except Exception as e:
             print(f"Error jobs: {e}")
             result1 = []
@@ -30,7 +30,7 @@ class tools:
         Args:
         details: dictionary of internship details
         """
-        print(details)
+        # print(details)
         internships={}
         # internships=InternshipSearch(details=details)
         return internships
@@ -40,7 +40,7 @@ class tools:
         Args:
         search_info: information to search for
         """
-        print(search_info)
+        # print(search_info)
         websearch=search.invoke(search_info)
         return websearch
     
@@ -54,14 +54,14 @@ class tools:
             A string containing the relevant text extracted from the vector search results.
         """
         print("about us")
-        print(query)
+        # print(query)
         try:
             results = about.search_documents(query)
             context = about.generate_answer(query, results)
         except Exception as e:
             print(f"Error: {e}")
             context = "Sorry, I couldn't retrieve the information at this time."
-        print(context)
+        # print(context)
         return context
 
     def services(self, query:str) -> str:
@@ -75,7 +75,7 @@ class tools:
             A string containing the retrieved and joined text content related to services.
         """
         print("services")
-        print(query)
+        # print(query)
         try:
             results = services.search_documents(query)
             context = about.generate_answer(query, results)
@@ -83,5 +83,5 @@ class tools:
             print(f"Error: {e}")
             context = "Sorry, I couldn't retrieve the information at this time."
         # print(context)
-        print(context)
+        # print(context)
         return context
