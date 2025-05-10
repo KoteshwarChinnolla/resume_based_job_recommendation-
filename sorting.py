@@ -1,15 +1,21 @@
 import heapq
 from resume_decoder import ResumeDecoder
 from pymongo import MongoClient
+import itertools
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+mongo_client = os.getenv("MONGODB_URI")
 
 
 class jobSort:
-    def __init__(self):
-        resume_decoder = ResumeDecoder()
-        r,k = resume_decoder.response2()
+    def __init__(self,pdf_text):
+        resume_decoder = ResumeDecoder(pdf_text)
+        r,k = resume_decoder.response()
 
         r["roles"]=k["role_name"]
-        client = MongoClient("mongodb+srv://Mithunlogin:12345@cluster0.nfdmggi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+        client = MongoClient(mongo_client)
         db = client["Growup"]
         collection = db["jobs"]
         self.company_roles = list(collection.find())
@@ -29,21 +35,15 @@ class jobSort:
         resume_exp = resume["experience"]
         resume_loc = self.normalize(resume["city"])
         heap = []
+        counter = itertools.count()
 
         for entry in company_roles:
             print(entry)
             job_roles = self.normalize(entry["role"])
             job_skills = self.normalize(entry["skills"])
-            try:
-                job_exp_from = int(entry["from_experience"])
-                job_exp_to = int(entry["to_experience"])
-            except ValueError:
-                job_exp_from = 0
-                job_exp_to = 0
-            try:
-                job_loc = self.normalize(entry["city"])
-            except KeyError:
-                job_loc = "hyderabad"  # Default location if not provided
+            job_exp_from = int(entry["from_experience"])
+            job_exp_to = int(entry["to_experience"])
+            job_loc = self.normalize(entry["city"])
 
             matched_skills = resume_skills & job_skills
             matched_roles = resume_roles & set(job_roles)
@@ -57,35 +57,41 @@ class jobSort:
                 score += 1
 
             if score > 0:
-                heapq.heappush(heap, (-score, entry["company"], entry["role"], {
+                print(f"Score: {score}, Company: {entry['company']}, Role: {entry['role']}")
+                heapq.heappush(heap, (-score, entry["company"], entry["role"], next(counter), {
                     "matched_skills": list(matched_skills),
-                    "matched_roles": list(matched_roles),
                     "location_match": location_match,
                     "experience_match": experience_match,
                     "total_score": score
                 }))
 
         ranked = []
-        while heap:
-            score, company, role, details = heapq.heappop(heap)
+        i=6
+        while (i>0) and heap:
+            details_ = heapq.heappop(heap)
+            # (-3, 'Nxtwave', 'Datascientist', 6, {'matched_skills': ['machine learning'], 'matched_roles': [], 'location_match': True, 'experience_match': True, 'total_score': 3}) 
+            details = details_[4]
+            company = details_[1]
+            role = details_[2]
             ranked.append({
                 "company": company,
                 "role": role,
                 **details
             })
+            i-=1
         return ranked
 
     # ranked_list = rank_companies(resume_data, company_roles)
 
 
-job_sort=jobSort()
-ranked_list=job_sort.rank_companies()
+# job_sort=jobSort()
+# ranked_list=job_sort.rank_companies()
 
-print("🎯 Priority-wise Suitable Companies and Roles:\n")
-for idx, item in enumerate(ranked_list, 1):
-    print(f"{idx}. {item['company']} - {item['role']}")
-    print(f"   Skills matched: {item['matched_skills']}")
-    print(f"   Roles matched: {item['matched_roles']}")
-    print(f"   Location match: {item['location_match']}")
-    print(f"   Experience match: {item['experience_match']}")
-    print(f"   Total Score: {item['total_score']}\n")
+# print("🎯 Priority-wise Suitable Companies and Roles:\n")
+# for idx, item in enumerate(ranked_list, 1):
+#     print(f"{idx}. {item['company']} - {item['role']}")
+#     print(f"   Skills matched: {item['matched_skills']}")
+#     print(f"   Roles matched: {item['matched_roles']}")
+#     print(f"   Location match: {item['location_match']}")
+#     print(f"   Experience match: {item['experience_match']}")
+#     print(f"   Total Score: {item['total_score']}\n")

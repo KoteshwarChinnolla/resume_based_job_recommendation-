@@ -12,7 +12,7 @@ class JobDataTransformer:
           "openings": []
       })
 
-      final_data = {"IT":{"companies":[]}, "Non-IT":{"companies":[]}}
+      final_data = {"IT":{"companies":[]}, "NonIT":{"companies":[]}}
 
       for job in data:
           company_name = job.get("company")
@@ -22,13 +22,13 @@ class JobDataTransformer:
 
           companies[company_name]["name"] = company_name
           companies[company_name]["logo"] = f"/logos/{company_name.lower()}.png"
-          companies[company_name]["industry"] = "IT" if company_type == "tech" else "Non-IT"
+          companies[company_name]["industry"] = "IT services" if company_type == "tech" else "Non-IT"
 
           opening = {
               "role": job.get("role") or None,
-              "experience": job.get("experience_range", "").replace(" ", "") or None,
+              "experience": f"{job.get('from_experience')} - {job.get("to_experience")} years",
               "location": job.get("city") or None,
-              "salary": f"{job.get('salary_range')} LPA" if job.get("salary_range") else None,
+              "salary": f"{job.get('from_salary')} - {job.get("to_salary")} LPA",
               "type": job.get("job_type") or None
           }
 
@@ -36,10 +36,10 @@ class JobDataTransformer:
 
       for company in companies.values():
           industry = company["industry"]
-          if industry == "IT":
+          if industry == "IT services":
               final_data["IT"]["companies"].append(company)
           else:
-              final_data["Non-IT"]["companies"].append(company)
+              final_data["NonIT"]["companies"].append(company)
 
       return final_data
 

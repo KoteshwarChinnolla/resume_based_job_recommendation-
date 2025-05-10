@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from typing_extensions import TypedDict
 from langchain_core.messages import AnyMessage
-from typing import Annotated, Literal, Optional, Any
+from typing import Annotated, Literal, Dict, Any, List, Optional
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
@@ -20,7 +20,11 @@ from roles import Roles
 
 
 load_dotenv()
-os.environ["GROQ_API_KEY"]= os.getenv("GROQ_API_KEY")
+# Set a default API key if not provided in environment
+if os.getenv("GROQ_API_KEY") is None:
+    os.environ["GROQ_API_KEY"] = "default_key_for_development"
+else:
+    os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
 roles = json.dumps(Roles.schema(), indent=2)
 roles = json.loads(roles)
@@ -29,9 +33,9 @@ class MessageState(TypedDict):
     messages:Annotated[list[AnyMessage],add_messages]
 
 class Job(BaseModel):
-    company: Optional[str]
-    job_description: Optional[str]
-    role: list[Annotated[str, Literal[
+    company: str
+    job_description: str
+    role: Literal[
         "MarketingTechnologist", "SEOSpecialist", "WebAnalyticsDeveloper", "DigitalMarketingManager", "SocialMediaManager",
         "GrowthHacker", "Content_Manager", "Content_Strategist", "InformationArchitect", "UX_Designer", "UI_Designer",
         "AccessibilitySpecialist", "InteractionDesigner", "FrontEndDesigner", "FrontEndDeveloper", "MobileDeveloper",
@@ -42,23 +46,23 @@ class Job(BaseModel):
         "DataAnalyst", "DataScientist", "CloudArchitect", "TechnicalLead", "DevOpsManager", "AgileProjectManager",
         "ProductManager", "TechnicalAccountManager", "SecuritySpecialist", "QASpecialist", "ComputerGraphicsAnimator",
         "MobileAppDeveloper", "MobileAppDesigner"
-    ]]]
-    experience: Optional[int]
-    apply_link: Optional[str]
-    skills: Optional[list[str]]
-    city: Optional[str]
-    state: Optional[str]
-    country:Optional[str]
-    expected_salary: Optional[int]
-    date: Optional[str]
-    job_type: Optional[str]
+    ]
+    experience: int
+    apply_link: str
+    skills: list[str] 
+    city: str
+    state: str
+    country:str
+    expected_salary: int
+    date: str
+    job_type: str
     tech_nontech : Literal["tech", "non-tech"]
 
 class build_graph:
-    def __init__(self):
+    def _init_(self):
 
         t=tools()
-        self.model=ChatGroq(model="qwen-qwq-32b")
+        self.model=ChatGroq(model="qwen-2.5-32b")
         self.job_search=t.job_search
         self.internship_search=t.internship_search
         self.websearch=t.websearch
@@ -96,26 +100,17 @@ class build_graph:
         you can use the tools to search for jobs, internships and services. you can also use about tool if response require companies information and can use web search tool for any current web information.
         to search for jobs and internships the json inputs must be in a specific format.
 
-        Focus on : 
-
-        1. Format to search for jobs / internships: {jobs} \n just call it once with all the required inputs.
+        1. Format to search for jobs / internships: {jobs}
         job search / internship search tool produces 2 outputs 1st represents matching jobs (jobs with any one or more parameter matched) and 2nd represents perfect match jobs (jobs with all the given parameters matched).
+        
         2. input the about us tool with the related query, if the response require companies information like (Mission,Benefits,Vision,Commitment,Achievements)
+
         3. input the about us tool with the related query, the response require companies services like.
+
         4. ask websearch tool for any current information
 
-        dont repeat the same tool call multiple times, call the tool only once with all the required inputs and use the response to generate the final answer.
-        if the tool is not required then just respond with the answer.
-
-        Important Instructions : 
-
-        > restrict the output below 500 words.
-        > use required tools only
-        > dont call the tools multiple times call it once but perfectly
-        > dont make any tool calling errors.
-
-        **generate faster and accurate responses**
-
+        process required toll responses summarize for a perfect output. make relevant tool calls for faster response. provide to the point response dont make any tool calling errors.
+        
         '''
 
         template = ChatPromptTemplate([
@@ -151,6 +146,7 @@ class build_graph:
             "job_type": job_data.get("job_type", "Full-time"),
             "category": job_data.get("tech_nontech", "string"),
             "description": job_data.get("job_description", "not mentioned"),
+            "match_score": 1  # Default match score
         }
 
     def response(self,message,name,thread_id):
@@ -246,7 +242,7 @@ class build_graph:
                 # Format the response according to the exact format required with only perfect matches
                 response_data["tools"]["job_search"] = {
                     "total_results": len(job_search_results["perfect_match_jobs"]),
-                    "jobs": job_search_results,
+                    "jobs": job_search_results["perfect_match_jobs"],
                     "search_criteria": search_criteria
                 }
             
@@ -265,14 +261,10 @@ class build_graph:
             elif tool_name == "internship_search" and data["responses"]:
                 internship_content = "\n".join(data["responses"])
                 response_data["tools"]["internship_search"] = internship_content
-        response_data["tools"]["ai_content"] = ai_response
+        
         # If only job search results are requested and available, return only those
         if "job_search" in response_data["tools"] and message.lower().find("job") != -1:
             return json.loads(json.dumps(response_data["tools"]["job_search"], indent=2))
         
         # Otherwise return the full response
         return json.loads(json.dumps(response_data, indent=2))
-
-# graph=build_graph()
-# response=graph.response(input(),name="user",thread_id="1234")
-# print(response)

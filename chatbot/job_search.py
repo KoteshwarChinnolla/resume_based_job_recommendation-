@@ -1,8 +1,12 @@
 from pymongo import MongoClient
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
+MONGODB_URI = os.getenv("MONGODB_URI")
 class JobSearch:
     def __init__(self):
-        client = MongoClient("mongodb+srv://Mithunlogin:12345@cluster0.nfdmggi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+        client = MongoClient(MONGODB_URI)
         db = client['Growup']
         self.collections = db['jobs']
         self.results1 = []
@@ -10,6 +14,8 @@ class JobSearch:
 
     def normalize(self,items):
         if isinstance(items, int):
+            return items
+        if isinstance(items, float):
             return items
         if isinstance(items, list):
             return set(i.strip().lower() for i in items)
@@ -81,9 +87,9 @@ class JobSearch:
                     not_matched = True
 
             if "role" in user_input:
-                job_roles = set(job.get("role"))
-                user_role = set(user_input["role"])
-                if user_role & job_roles:
+                job_roles = job.get("role")
+                user_role = user_input["role"]
+                if job_roles in user_role:
                     matched = True
                 else:
                     not_matched = True
@@ -101,27 +107,41 @@ class JobSearch:
                     not_matched = True
 
             if matched:
-                self.results1.append(self.convert(job))
+                job_result = {
+                    "company": job.get("company"),
+                    "role": job.get("role"),
+                    "job_description": job.get("job_description"),
+                    "experience_range": f"{job.get('from_experience')} - {job.get('to_experience')} years",
+                    "salary_range": f"{job.get('from_salary')} - {job.get('to_salary')}",
+                    "city": f"{job.get('city')}",
+                    "state": f"{job.get('state')}", 
+                    "country":f"{job.get('country')}",
+                    "job_type": job.get("job_type"),
+                    "tech_nontech": job.get("tech_nontech"),
+                    "apply_link": job.get("apply_link"),
+                    "date": job.get("date"),
+                    "matched_skills": list(common_skills)
+                }
+                self.results1.append(job_result)
             if not_matched is False:
-                self.results2.append(self.convert(job))
-        return self.results1, self.results2
-    def convert(self,job):
-        job_result = {
-            "_id": str(job["_id"]),
-            "company": job.get("company"),
-            "role": job.get("role"),
-            "job_description": job.get("job_description"),
-            "experience_range": f"{job.get('from_experience')} - {job.get('to_experience')} years",
-            "salary_range": f"{job.get('from_salary')} - {job.get('to_salary')}",
-            "city": f"{job.get('city')}",
-            "state": f"{job.get('state')}", 
-            "country":f"{job.get('country')}",
-            "job_type": job.get("job_type"),
-            "tech_nontech": job.get("tech_nontech"),
-            "apply_link": job.get("apply_link"),
-            "date": job.get("date"),
-        }
-        return job_result
+                job_perfect_match = {
+                    "company": job.get("company"),
+                    "role": job.get("role"),
+                    "job_description": job.get("job_description"),
+                    "experience_range": f"{job.get('from_experience')} - {job.get('to_experience')} years",
+                    "salary_range": f"{job.get('from_salary')} - {job.get('to_salary')}",  
+                    "city": f"{job.get('city')}",
+                    "state": f"{job.get('state')}", 
+                    "country":f"{job.get('country')}",
+                    "job_type": job.get("job_type"),
+                    "tech_nontech": job.get("tech_nontech"),
+                    "apply_link": job.get("apply_link"),
+                    "date": job.get("date"),
+                    "matched_skills": list(common_skills)
+                }
+                self.results2.append(job_perfect_match)
+
+        return self.results1[:3], self.results2[:3]
 
 # user_input = {'company': 'Capgemini', 'city': 'Bangalore '}
 # job_search = JobSearch()
