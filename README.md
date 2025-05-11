@@ -21,7 +21,7 @@
 **pre requisite** Docker engene on your system. 
 
 > 1. start the docker Engene
-> 2.. Run `docker compose up --build` command
+> 2. Run `docker compose up --build` command
 
 ### 2. General
 **pre requisite** python on your system 
